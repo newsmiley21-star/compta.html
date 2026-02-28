@@ -62,7 +62,7 @@
         <div class="lock-box">
             <h2 style="margin:0; font-size: 18px;">CT241 FINANCE 🔐</h2>
             <p style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Accès Administrateur Uniquement</p>
-            <input type="password" id="admin-code" placeholder="Entrez le code">
+            <input type="password" id="admin-code" placeholder="Entrez le code" onkeypress="if(event.key === 'Enter') verifierCode()">
             <button class="btn-unlock" onclick="verifierCode()">OUVRIR LE BILAN</button>
             <p id="lock-error" style="color:red; font-size: 11px; margin-top: 10px; display:none; font-weight: bold;">CODE INCORRECT</p>
         </div>
@@ -116,31 +116,4 @@
         <button class="btn-print" onclick="window.print()">📥 TÉLÉCHARGER LE RAPPORT PDF</button>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
-    // Configuration Firebase fournie
-    const firebaseConfig = {
-        apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
-        authDomain: "cashtransfert-21.firebaseapp.com",
-        databaseURL: "https://cashtransfert-21-default-rtdb.firebaseio.com",
-        projectId: "cashtransfert-21",
-        storageBucket: "cashtransfert-21.firebasestorage.app",
-        messagingSenderId: "564831743134",
-        appId: "1:564831743134:web:c22a1f53707f0f1dd9df8f"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    let filterMode = 'all';
-
-    // FONCTION DE VÉRIFICATION DU CODE (Globale pour le onclick HTML)
-    window.verifierCode = () => {
-        const input = document.getElementById('admin-code').value;
-        if(input === "2410") {
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
-            chargerDonnees();
-        } else {
-            document.getElementById('lock-error').style.display =
+<script
