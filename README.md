@@ -3,85 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CT241 - DASHBOARD SÉCURISÉ</title>
+    <title>CT241 - FINANCE & DASHBOARD</title>
     <style>
         :root {
             --gabon-vert: #009E60; --gabon-jaune: #FCD116; --gabon-bleu: #3A75C4;
-            --bg: #f8f9fa; --card-bg: #ffffff; --text-main: #2c3e50; --text-muted: #7f8c8d;
+            --bg: #f4f7f6; --card-bg: #ffffff; --text-main: #2d3436; --text-muted: #636e72;
         }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; }
 
         /* ÉCRAN DE VERROUILLAGE */
         #lock-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--text-main); display: flex; align-items: center; justify-content: center; z-index: 10000;
+            background: #1e272e; display: flex; align-items: center; justify-content: center; z-index: 10000;
         }
-        .lock-box { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 85%; max-width: 320px; border-top: 8px solid var(--gabon-jaune); }
-        .lock-box input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 18px; text-align: center; box-sizing: border-box; }
-        .btn-unlock { width: 100%; padding: 15px; background: var(--gabon-vert); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .lock-box { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 85%; max-width: 320px; border-top: 10px solid var(--gabon-jaune); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .lock-box input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #eee; border-radius: 10px; font-size: 18px; text-align: center; box-sizing: border-box; outline: none; transition: 0.3s; }
+        .lock-box input:focus { border-color: var(--gabon-bleu); }
+        .btn-unlock { width: 100%; padding: 15px; background: var(--gabon-vert); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
-        /* CONTENU (Masqué par défaut) */
-        #dashboard-content { display: none; padding: 20px; }
+        /* DASHBOARD CONTENT */
+        #dashboard-content { display: none; padding: 15px; max-width: 800px; margin: auto; }
         
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px; }
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid #eee; }
-        .kpi-card.green { border-top-color: var(--gabon-vert); }
-        .kpi-card.blue { border-top-color: var(--gabon-bleu); }
-        .kpi-card div { font-size: 22px; font-weight: 800; margin-top: 8px; }
-        
-        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-filter { flex: 1; padding: 10px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn-filter.active { background: var(--text-main); color: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .header h1 { font-size: 20px; margin: 0; color: var(--gabon-vert); font-weight: 800; }
 
-        .data-panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+        /* KPI CARDS */
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .kpi-card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ddd; }
+        .kpi-card.green { border-left-color: var(--gabon-vert); }
+        .kpi-card.yellow { border-left-color: var(--gabon-jaune); }
+        .kpi-card span { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
+        .kpi-card div { font-size: 18px; font-weight: 800; margin-top: 5px; }
+
+        /* FILTRES */
+        .filters { display: flex; gap: 8px; margin-bottom: 20px; }
+        .btn-f { flex: 1; padding: 10px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
+        .btn-f.active { background: var(--text-main); color: white; }
+
+        /* TABLEAU */
+        .panel { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f9f9f9; text-align: left; padding: 12px 20px; font-size: 11px; color: var(--text-muted); }
-        td { padding: 15px 20px; border-bottom: 1px solid #f1f1f1; font-size: 14px; }
-        .amount { text-align: right; font-weight: 800; color: var(--gabon-vert); }
-        .id-label { font-family: monospace; background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        th { background: #f8fafc; text-align: left; padding: 12px 15px; font-size: 10px; color: var(--text-muted); border-bottom: 1px solid #eee; }
+        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: top; }
+        
+        .id-label { font-family: monospace; background: #2d3436; color: var(--gabon-jaune); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .date-info { font-size: 10px; color: #95a5a6; display: block; margin-top: 4px; line-height: 1.2; }
+        .amount { text-align: right; font-weight: 800; color: var(--gabon-vert); font-size: 14px; }
+        .lieu-info { font-size: 11px; color: var(--gabon-bleu); font-weight: 500; }
 
-        @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+        .btn-print { width: 100%; margin-top: 20px; padding: 15px; background: #2d3436; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        @media print { .filters, .btn-print, #lock-screen { display: none; } }
     </style>
 </head>
 <body>
 
     <div id="lock-screen">
         <div class="lock-box">
-            <h2 style="margin:0; color: var(--text-main);">🔐 ACCÈS PRIVÉ</h2>
-            <p style="font-size: 12px; color: gray;">Entrez le code administrateur</p>
-            <input type="password" id="admin-code" placeholder="Code Secret">
-            <button class="btn-unlock" onclick="verifierCode()">ACCÉDER AUX COMPTES</button>
-            <p id="lock-error" style="color:red; font-size: 12px; margin-top: 10px; display:none;">Code incorrect !</p>
+            <h2 style="margin:0; font-size: 18px;">CT241 FINANCE 🔐</h2>
+            <p style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Accès Administrateur Uniquement</p>
+            <input type="password" id="admin-code" placeholder="Entrez le code">
+            <button class="btn-unlock" onclick="verifierCode()">OUVRIR LE BILAN</button>
+            <p id="lock-error" style="color:red; font-size: 11px; margin-top: 10px; display:none; font-weight: bold;">CODE INCORRECT</p>
         </div>
     </div>
 
     <div id="dashboard-content">
-        <div class="app-header">
-            <h1>CT241 <span style="color:var(--gabon-vert)">FINANCE</span></h1>
-            <div style="font-size: 12px; font-weight: bold; color: var(--gabon-bleu);">ADMINISTRATEUR</div>
+        <div class="header">
+            <h1>CT241 <span style="color:var(--text-main)">COMPTA</span></h1>
+            <div style="font-size: 10px; background: #e1f5fe; padding: 4px 8px; border-radius: 5px; color: var(--gabon-bleu); font-weight: bold;">LIVE SYNC</div>
         </div>
 
-        <div class="controls">
-            <button class="btn-filter active" onclick="setFilter('all', this)">Global</button>
-            <button class="btn-filter" onclick="setFilter('today', this)">Aujourd'hui</button>
-            <button class="btn-filter" onclick="setFilter('month', this)">Mois</button>
+        <div class="filters">
+            <button class="btn-f active" id="f-all">Global</button>
+            <button class="btn-f" id="f-today">Aujourd'hui</button>
+            <button class="btn-f" id="f-month">Ce Mois</button>
         </div>
 
         <div class="kpi-grid">
-            <div class="kpi-card green"><span>Encaissé (Cash)</span><div id="val-encaissé">0</div></div>
-            <div class="kpi-card blue"><span>Missions</span><div id="val-count">0</div></div>
-            <div class="kpi-card" style="border-top-color:var(--gabon-jaune)"><span>En Attente</span><div id="val-attente">0</div></div>
-            <div class="kpi-card"><span>Moyenne</span><div id="val-avg">0</div></div>
+            <div class="kpi-card green">
+                <span>Cash en Main ✅</span>
+                <div id="val-encaissé">0 F</div>
+            </div>
+            <div class="kpi-card yellow">
+                <span>En Attente ⏳</span>
+                <div id="val-attente">0 F</div>
+            </div>
+            <div class="kpi-card">
+                <span>Missions Payées</span>
+                <div id="val-count">0</div>
+            </div>
+            <div class="kpi-card">
+                <span>Moyenne/Client</span>
+                <div id="val-avg">0 F</div>
+            </div>
         </div>
 
-        <div class="data-panel">
+        <div class="panel">
             <table>
-                <thead><tr><th>REF / DATE</th><th>CLIENT</th><th style="text-align:right">COMMISSION</th></tr></thead>
-                <tbody id="table-body"></tbody>
+                <thead>
+                    <tr>
+                        <th>MISSION / DATE</th>
+                        <th>DÉTAILS CLIENT</th>
+                        <th style="text-align:right">MONTANT</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    </tbody>
             </table>
         </div>
-        <button onclick="window.print()" style="width:100%; padding:15px; margin-top:20px; border-radius:10px; border:none; background:#34495e; color:white; font-weight:bold;">IMPRIMER LE BILAN</button>
+
+        <button class="btn-print" onclick="window.print()">📥 TÉLÉCHARGER LE RAPPORT PDF</button>
     </div>
 
 <script type="module">
@@ -102,92 +134,90 @@
     const db = getDatabase(app);
     let filterMode = 'all';
 
-    // --- SÉCURITÉ PAR CODE ---
+    // FONCTION DE VÉRIFICATION DU CODE
     window.verifierCode = () => {
-        const code = document.getElementById('admin-code').value;
-        if(code === "2410") {
+        const input = document.getElementById('admin-code').value;
+        if(input === "2410") {
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard-content').style.display = 'block';
-            chargerDonnees(); // On lance la synchronisation
+            chargerDonnees();
         } else {
             document.getElementById('lock-error').style.display = 'block';
         }
     };
 
-    // --- SYNCHRONISATION EN TEMPS RÉEL ---
-    function chargerDonnees() {
-        console.log("Tentative de synchronisation...");
-        onValue(ref(db, 'missions'), (snap) => {
-            const data = snap.val();
-            const body = document.getElementById('table-body');
-            let totalCash = 0, totalWait = 0, count = 0;
-            body.innerHTML = "";
-            const today = new Date().toLocaleDateString('fr-FR');
-
-            if (data) {
-                Object.keys(data).reverse().forEach(key => {
-                    const m = data[key];
-                    if(filterMode === 'today' && m.date !== today) return;
-                    
-                    if(m.etape === 3) { // Uniquement encaissé
-                        totalCash += m.com; count++;
-                        body.innerHTML += `<tr><td><span class="id-label">${m.id}</span></td><td><strong>${m.nom}</strong></td><td class="amount">${m.com.toLocaleString()} F</td></tr>`;
-                    } else if (m.etape === 2) { // En attente de caisse
-                        totalWait += m.com;
-                    }
-                });
-            }
-            document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
-            document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
-            document.getElementById('val-count').innerText = count;
-            document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash/count).toLocaleString() + " F" : "0 F";
-            console.log("Synchronisation réussie !");
-        }, (error) => {
-            alert("Erreur Firebase : Vérifiez vos règles (Rules) dans la console.");
-        });
-    }
-
-    window.setFilter = (mode, btn) => {
+    // LOGIQUE DE FILTRAGE
+    const updateTab = (id, mode) => {
         filterMode = mode;
-        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        document.querySelectorAll('.btn-f').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
         chargerDonnees();
     };
-</script>
 
-    window.setFilter = (mode, btn) => {
-        filterMode = mode;
-        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        chargerDonnees();
-    };
-</script>
+    document.getElementById('f-all').onclick = () => updateTab('f-all', 'all');
+    document.getElementById('f-today').onclick = () => updateTab('f-today', 'today');
+    document.getElementById('f-month').onclick = () => updateTab('f-month', 'month');
 
+    // CHARGEMENT ET SYNCHRONISATION DES DONNÉES
     function chargerDonnees() {
         onValue(ref(db, 'missions'), (snap) => {
             const data = snap.val();
             const body = document.getElementById('table-body');
             let totalCash = 0, totalWait = 0, count = 0;
+            
             body.innerHTML = "";
-            const today = new Date().toLocaleDateString('fr-FR');
+            const todayStr = new Date().toLocaleDateString('fr-FR');
+            const currentMonth = new Date().getMonth();
 
             if (data) {
-                Object.keys(data).reverse().forEach(key => {
+                // Trier pour avoir les plus récents en haut
+                const keys = Object.keys(data).reverse();
+
+                keys.forEach(key => {
                     const m = data[key];
-                    if(filterMode === 'today' && m.date !== today) return;
-                    
-                    if(m.etape === 3) {
-                        totalCash += m.com; count++;
-                        body.innerHTML += `<tr><td><span class="id-label">${m.id}</span><br><small>${m.heure}</small></td><td><strong>${m.nom}</strong><br><small>${m.date}</small></td><td class="amount">${m.com.toLocaleString()} F</td></tr>`;
-                    } else if (m.etape === 2) {
-                        totalWait += m.com;
+
+                    // Logique de Filtrage
+                    if(filterMode === 'today' && m.date !== todayStr) return;
+                    if(filterMode === 'month') {
+                        const mMonth = parseInt(m.date.split('/')[1]) - 1;
+                        if(mMonth !== currentMonth) return;
+                    }
+
+                    // Calcul de l'argent en attente (Livreurs en route)
+                    if (m.etape === 2) {
+                        totalWait += parseFloat(m.com || 0);
+                    }
+
+                    // Affichage et calcul des recettes encaissées (Payées)
+                    if (m.etape === 3) {
+                        const montant = parseFloat(m.com || 0);
+                        totalCash += montant;
+                        count++;
+
+                        body.innerHTML += `
+                            <tr>
+                                <td>
+                                    <span class="id-label">${m.id}</span>
+                                    <span class="date-info">📅 ${m.date}<br>🕒 ${m.heure}</span>
+                                </td>
+                                <td>
+                                    <strong>${m.nom}</strong><br>
+                                    <span class="lieu-info">📍 ${m.lieu || 'Non spécifié'}</span>
+                                </td>
+                                <td class="amount">
+                                    ${montant.toLocaleString()} F
+                                </td>
+                            </tr>
+                        `;
                     }
                 });
             }
+
+            // MAJ des compteurs du tableau de bord
             document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
             document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
             document.getElementById('val-count').innerText = count;
-            document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash/count).toLocaleString() + " F" : "0 F";
+            document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash / count).toLocaleString() + " F" : "0 F";
         });
     }
 </script>
