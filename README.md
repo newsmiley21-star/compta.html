@@ -61,9 +61,9 @@
     <div id="lock-screen">
         <div class="lock-box">
             <h2 style="margin:0; font-size: 18px;">CT241 FINANCE 🔐</h2>
-            <p id="status-text" style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Chargement du système...</p>
-            <input type="tel" id="admin-code" placeholder="Code (4 chiffres)" onkeypress="if(event.key === 'Enter') verifierCode()" autocomplete="off">
-            <button class="btn-unlock" onclick="verifierCode()">OUVRIR LE BILAN</button>
+            <p id="status-text" style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Entrez le code d'accès</p>
+            <input type="password" id="admin-code" placeholder="Code secret" autocomplete="off">
+            <button class="btn-unlock" id="unlock-btn">OUVRIR LE BILAN</button>
             <p id="lock-error" style="color:red; font-size: 11px; margin-top: 10px; display:none; font-weight: bold;">CODE INCORRECT</p>
         </div>
     </div>
@@ -117,10 +117,40 @@
     </div>
 
 <script>
-    // Variable globale pour Firebase accessible partout
-    let chargerDonneesFonction = null;
+    // Variable pour stocker la fonction de chargement Firebase
+    let startSync = null;
 
-    // Fonction de vérification simplifiée et robuste
-    function verifierCode() {
-        const input = document.getElementById('admin-code').value.trim();
-        const errorMsg = document.getElementById('lock-error
+    function verifierDirect() {
+        const val = document.getElementById('admin-code').value.trim();
+        const error = document.getElementById('lock-error');
+        
+        // Le code est "2410"
+        if (val === "2410") {
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+            if (typeof startSync === "function") startSync();
+        } else {
+            error.style.display = 'block';
+            document.getElementById('admin-code').value = "";
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('unlock-btn');
+        const input = document.getElementById('admin-code');
+        
+        btn.addEventListener('click', verifierDirect);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifierDirect();
+        });
+        input.focus();
+    });
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
+        auth
