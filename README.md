@@ -87,7 +87,6 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
@@ -101,30 +100,23 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const auth = getAuth(app);
     let filterMode = 'all';
 
+    // --- SÉCURITÉ PAR CODE ---
     window.verifierCode = () => {
         const code = document.getElementById('admin-code').value;
         if(code === "2410") {
-            // REMPLACE PAR TON EMAIL ET MOT DE PASSE ADMIN ICI
-            // Cela force l'App Compta à avoir les mêmes droits que l'App 1
-            signInWithEmailAndPassword(auth, "admin@ct241.ga", "TON_MOT_DE_PASSE")
-            .then(() => {
-                document.getElementById('lock-screen').style.display = 'none';
-                document.getElementById('dashboard-content').style.display = 'block';
-                chargerDonnees();
-            })
-            .catch(err => {
-                alert("Erreur de synchronisation : " + err.message);
-            });
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+            chargerDonnees(); // On lance la synchronisation
         } else {
             document.getElementById('lock-error').style.display = 'block';
         }
     };
 
+    // --- SYNCHRONISATION EN TEMPS RÉEL ---
     function chargerDonnees() {
-        // Cette fonction "écoute" la base de données en temps réel
+        console.log("Tentative de synchronisation...");
         onValue(ref(db, 'missions'), (snap) => {
             const data = snap.val();
             const body = document.getElementById('table-body');
@@ -137,10 +129,10 @@
                     const m = data[key];
                     if(filterMode === 'today' && m.date !== today) return;
                     
-                    if(m.etape === 3) { // Uniquement les missions encaissées
+                    if(m.etape === 3) { // Uniquement encaissé
                         totalCash += m.com; count++;
                         body.innerHTML += `<tr><td><span class="id-label">${m.id}</span></td><td><strong>${m.nom}</strong></td><td class="amount">${m.com.toLocaleString()} F</td></tr>`;
-                    } else if (m.etape === 2) {
+                    } else if (m.etape === 2) { // En attente de caisse
                         totalWait += m.com;
                     }
                 });
@@ -149,8 +141,19 @@
             document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
             document.getElementById('val-count').innerText = count;
             document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash/count).toLocaleString() + " F" : "0 F";
+            console.log("Synchronisation réussie !");
+        }, (error) => {
+            alert("Erreur Firebase : Vérifiez vos règles (Rules) dans la console.");
         });
     }
+
+    window.setFilter = (mode, btn) => {
+        filterMode = mode;
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        chargerDonnees();
+    };
+</script>
 
     window.setFilter = (mode, btn) => {
         filterMode = mode;
