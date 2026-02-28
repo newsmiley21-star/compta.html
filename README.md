@@ -3,98 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CT241 - Commander & Suivre</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>CT241 - GESTION & LOGISTIQUE</title>
     <style>
-        :root { --gabon-vert: #009E60; --gabon-jaune: #FCD116; --gabon-bleu: #3A75C4; }
-        .bg-gabon-vert { background-color: var(--gabon-vert); }
-        #map { height: 280px; width: 100%; border-radius: 16px; margin-top: 12px; display: none; z-index: 10; border: 2px solid #e5e7eb; }
-        .pulse { animation: pulse-animation 2s infinite; }
-        @keyframes pulse-animation { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-        .section { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        :root {
+            --gabon-vert: #009E60; --gabon-jaune: #FCD116; --gabon-bleu: #3A75C4;
+            --danger: #e74c3c; --dark: #1a1a1a; --light: #f8f9fa;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 0; padding: 10px; }
+        
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark); display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .login-card {
+            background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px;
+            text-align: center; border-top: 8px solid var(--gabon-jaune);
+        }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 14px; background: var(--gabon-vert); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        #main-app { display: none; max-width: 800px; margin: auto; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        nav { display: flex; gap: 5px; margin-bottom: 15px; }
+        nav button { flex: 1; padding: 12px; border: none; border-radius: 8px; background: #eee; font-weight: bold; font-size: 11px; transition: 0.3s; }
+        nav button.active { background: var(--gabon-vert); color: white; box-shadow: 0 2px 5px rgba(0,158,96,0.3); }
+
+        .form-box { background: #f9f9f9; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd; }
+        #mComDisplay { background: #e3f2fd; font-weight: bold; border: 1px solid var(--gabon-bleu); color: var(--gabon-bleu); text-align: center; }
+        
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 6px solid var(--gabon-bleu); position: relative; }
+        .card.done { border-left-color: var(--gabon-vert); background: #f0fff4; }
+        
+        .gps-badge { background: #fffde7; color: #fbc02d; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; }
+        .btn-maps { background: #4285F4; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 10px; display: inline-block; text-decoration: none; }
+        
+        .btn-wa { background: #25D366; color: white; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-del { color: var(--danger); border: none; background: none; font-weight: bold; font-size: 20px; cursor: pointer; position: absolute; top: 10px; right: 10px; }
+        
+        .section { display: none; }
+        .active-sec { display: block; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .stat-item { background: #1a1a1a; padding: 15px; border-radius: 10px; color: white; text-align: center; }
+
+        .status-dot { height: 8px; width: 8px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-active { background-color: var(--gabon-vert); box-shadow: 0 0 5px var(--gabon-vert); }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
+<body>
 
-    <!-- HEADER -->
-    <header class="bg-white sticky top-0 z-50 shadow-sm border-b-4 border-gabon-jaune p-4 flex justify-between items-center">
-        <div class="flex items-center gap-2" onclick="location.reload()" style="cursor: pointer;">
-            <div class="w-10 h-10 bg-gabon-vert rounded-xl flex items-center justify-center text-white font-black shadow-sm">CT</div>
+    <div id="auth-screen">
+        <div class="login-card">
+            <h2 style="color:var(--gabon-vert); margin:0">CT241 GABON</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Gestion Pro & Comptabilité</p>
+            <input type="email" id="login-email" placeholder="Email (Livreur ou Admin)">
+            <input type="password" id="login-pass" placeholder="Mot de passe">
+            <button class="btn-login" id="btnConnect">SE CONNECTER</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
             <div>
-                <h1 class="font-black text-xl leading-none tracking-tighter text-gray-800">CT241</h1>
-                <span class="text-[10px] font-bold text-gabon-vert uppercase tracking-widest">Gabon Cash</span>
+                <h3 style="margin:0; color:var(--gabon-vert)">CT241 GESTION</h3>
+                <small id="userDisplay" style="font-size: 10px; color: #777;"></small>
+            </div>
+            <button id="btnOut" style="font-size:10px; color:var(--danger); background:none; border:none; font-weight:bold">SORTIR</button>
+        </header>
+
+        <nav id="adminNav">
+            <button onclick="ouvrir('saisie')" id="t-saisie" class="active">SAISIE</button>
+            <button onclick="ouvrir('taches')" id="t-taches">MISSIONS</button>
+            <button onclick="ouvrir('reçus')" id="t-reçus">SUIVI & CAISSE</button>
+        </nav>
+
+        <!-- ONGLET SAISIE -->
+        <div id="sec-saisie" class="section active-sec">
+            <div class="form-box">
+                <input type="text" id="mNom" placeholder="Nom du Client">
+                <input type="tel" id="mTel" placeholder="Numéro du Client">
+                <input type="text" id="mLieu" placeholder="Localisation / Quartier">
+                <input type="number" id="mRetrait" placeholder="Montant Cash (FCFA)">
+                <div style="margin-top:5px; font-size: 11px; color: #555;">Commission Direction (Gain Net) :</div>
+                <input type="text" id="mComDisplay" value="390 FCFA" readonly title="190F (Client) + 200F (Livreur)">
+                <button onclick="lancerMission()" style="width:100%; padding:14px; background:var(--gabon-bleu); color:white; border:none; border-radius:8px; font-weight:bold; margin-top:10px">CRÉER LA MISSION</button>
             </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="showSection('commander')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-full text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all">Commander</button>
-            <button onclick="showSection('suivi')" class="bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase shadow-md active:scale-95 transition-all">Suivre</button>
+
+        <!-- ONGLET MISSIONS (LIVREURS) -->
+        <div id="sec-taches" class="section">
+            <h4 style="margin: 0 0 10px 0;">Missions en cours</h4>
+            <div id="list-taches"></div>
         </div>
-    </header>
 
-    <main class="max-w-md mx-auto p-4 pb-24">
-        
-        <!-- SECTION 1 : PASSER COMMANDE -->
-        <div id="sec-commander" class="section">
-            <div class="bg-white rounded-[2rem] shadow-2xl p-6 border border-gray-100 overflow-hidden relative">
-                <h2 class="text-2xl font-black mb-1 text-gray-800 tracking-tighter">Nouvelle Commande</h2>
-                <p class="text-gray-400 text-[10px] mb-6 uppercase font-bold tracking-widest">Recevez votre cash à domicile</p>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Nom complet</label>
-                        <input type="text" id="cNom" class="w-full p-4 bg-gray-50 border-2 border-gray-100 focus:border-green-500 rounded-2xl outline-none transition-all font-bold" placeholder="Ex: Jean-Marc">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Téléphone</label>
-                            <input type="tel" id="cTel" class="w-full p-4 bg-gray-50 border-2 border-gray-100 focus:border-green-500 rounded-2xl outline-none font-bold" placeholder="077...">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Quartier</label>
-                            <input type="text" id="cLieu" class="w-full p-4 bg-gray-50 border-2 border-gray-100 focus:border-green-500 rounded-2xl outline-none font-bold" placeholder="Lieu dit">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Montant Cash souhaité</label>
-                        <div class="relative">
-                            <input type="number" id="cMontant" oninput="calculerFrais()" class="w-full p-6 bg-gray-100 border-2 border-transparent focus:bg-white focus:border-green-500 rounded-3xl outline-none font-black text-3xl text-green-700 shadow-inner" placeholder="0">
-                            <span class="absolute right-6 top-7 text-gray-400 font-black">FCFA</span>
-                        </div>
-                    </div>
-
-                    <!-- BLOC RÉSUMÉ COMPTABILITÉ -->
-                    <div class="bg-gray-900 rounded-[1.5rem] p-5 text-white shadow-xl">
-                        <div class="space-y-1 mb-3 border-b border-gray-800 pb-2">
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                                <span>Service Client (Frais)</span>
-                                <span class="text-blue-400">190 F</span>
-                            </div>
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                                <span>Frais de Livraison</span>
-                                <span class="text-blue-400">1 000 F</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <span class="font-bold text-xs text-gray-400 uppercase leading-none">Total à payer<br><span class="text-[9px] lowercase italic">Cash + Frais</span></span>
-                            <span id="totalDisplay" class="font-black text-3xl leading-none text-white tracking-tighter">0 F</span>
-                        </div>
-                    </div>
-
-                    <button onclick="validerCommande()" id="btnCommander" class="w-full bg-gabon-vert text-white font-black py-5 rounded-2xl shadow-xl active:scale-95 hover:brightness-110 transition-all text-xl mt-2 uppercase tracking-tighter">
-                        Confirmer la commande
-                    </button>
+        <!-- ONGLET SUIVI GPS & FINANCES -->
+        <div id="sec-reçus" class="section">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <small style="color: var(--gabon-jaune)">PAIES LIVREURS (Net)</small><br>
+                    <b id="totalComLivreur" style="font-size:18px">0</b> <small>F</small>
+                </div>
+                <div class="stat-item" style="border: 1px solid var(--gabon-vert)">
+                    <small style="color: var(--gabon-vert)">PROFIT CT241</small><br>
+                    <b id="totalProfitAdmin" style="font-size:18px; color: var(--gabon-vert)">0</b> <small>F</small>
                 </div>
             </div>
-        </div>
+            
+            <input type="text" id="searchInput" oninput="filtrerRecus()" style="margin-top:15px" placeholder="🔍 Rechercher un client ou livreur...">
+            <div id="list-reçus" style="margin-top:10px"></div>
 
-        <!-- SECTION 2 : SUIVI GPS -->
-        <div id="sec-suivi" class="section hidden">
-            <div class="bg-white rounded-[2rem] shadow-xl p-6 mb-6 border border-blue-50">
-                <p class="text-[10px] font-black text-blue-600 uppercase mb-3 ml-1 tracking-widest text-center">Rechercher une livraison</p>
-                <div class="flex gap-2">
-                    <input type="tel" id="searchTel" placeholder="Votre numéro 07..." class="flex-1 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-blue-500 font
+            <button class="btn-wa" onclick="shareWA()">📲 BILAN WHATSAPP</button>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
+        authDomain: "cashtransfert-21.firebaseapp.com",
+        databaseURL: "https://cashtransfert-21-default-rtdb.firebaseio.com",
+        projectId: "cashtransfert-21",
+        storageBucket: "cashtransfert-21.firebasestorage.app",
+        messagingSenderId: "564831743134",
+        appId: "1:564831743134:web:c22a1f53707f0f1dd9df8f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let userNow = "";
+    let missionsLocales = [];
+
+    // Connexion
+    document.getElementById('btnConnect').onclick = () => {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Accès refusé"));
+    };
+
+    document.getElementById('btnOut').onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, (u) => {
+        if(u) {
+            userNow = u.email;
+            document.getElementById('userDisplay').innerText = userNow;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            
+            if(userNow.includes('livreur')) {
+                document.getElementById('t-saisie').style.display = 'none';
+                document.getElementById('t-reçus').style.display = 'none';
+                ouvrir('taches');
+            }
