@@ -105,7 +105,7 @@
     // --- SÉCURITÉ ---
     window.verifierCode = () => {
         const code = document.getElementById('admin-code').value;
-        if(code === "MAFAMILLE@77434711") { // <--- MODIFIE TON CODE ICI
+        if(code === "2410") { // <--- MODIFIE TON CODE ICI
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard-content').style.display = 'block';
             chargerDonnees();
