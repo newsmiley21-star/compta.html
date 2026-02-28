@@ -61,8 +61,8 @@
     <div id="lock-screen">
         <div class="lock-box">
             <h2 style="margin:0; font-size: 18px;">CT241 FINANCE 🔐</h2>
-            <p style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Accès Administrateur Uniquement</p>
-            <input type="password" id="admin-code" placeholder="Entrez le code" onkeypress="if(event.key === 'Enter') verifierCode()">
+            <p id="status-text" style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Chargement du système...</p>
+            <input type="tel" id="admin-code" placeholder="Code (4 chiffres)" onkeypress="if(event.key === 'Enter') verifierCode()" autocomplete="off">
             <button class="btn-unlock" onclick="verifierCode()">OUVRIR LE BILAN</button>
             <p id="lock-error" style="color:red; font-size: 11px; margin-top: 10px; display:none; font-weight: bold;">CODE INCORRECT</p>
         </div>
@@ -116,4 +116,11 @@
         <button class="btn-print" onclick="window.print()">📥 TÉLÉCHARGER LE RAPPORT PDF</button>
     </div>
 
-<script
+<script>
+    // Variable globale pour Firebase accessible partout
+    let chargerDonneesFonction = null;
+
+    // Fonction de vérification simplifiée et robuste
+    function verifierCode() {
+        const input = document.getElementById('admin-code').value.trim();
+        const errorMsg = document.getElementById('lock-error
