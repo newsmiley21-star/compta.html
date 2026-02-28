@@ -87,6 +87,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
@@ -100,27 +101,64 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
     let filterMode = 'all';
 
-    // --- SÉCURITÉ ---
     window.verifierCode = () => {
         const code = document.getElementById('admin-code').value;
-        if(code === " 2410 ") { // <--- MODIFIE TON CODE ICI
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
-            chargerDonnees();
+        if(code === "2410") {
+            // REMPLACE PAR TON EMAIL ET MOT DE PASSE ADMIN ICI
+            // Cela force l'App Compta à avoir les mêmes droits que l'App 1
+            signInWithEmailAndPassword(auth, "admin@ct241.ga", "TON_MOT_DE_PASSE")
+            .then(() => {
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                chargerDonnees();
+            })
+            .catch(err => {
+                alert("Erreur de synchronisation : " + err.message);
+            });
         } else {
             document.getElementById('lock-error').style.display = 'block';
         }
     };
 
-    // --- LOGIQUE ---
+    function chargerDonnees() {
+        // Cette fonction "écoute" la base de données en temps réel
+        onValue(ref(db, 'missions'), (snap) => {
+            const data = snap.val();
+            const body = document.getElementById('table-body');
+            let totalCash = 0, totalWait = 0, count = 0;
+            body.innerHTML = "";
+            const today = new Date().toLocaleDateString('fr-FR');
+
+            if (data) {
+                Object.keys(data).reverse().forEach(key => {
+                    const m = data[key];
+                    if(filterMode === 'today' && m.date !== today) return;
+                    
+                    if(m.etape === 3) { // Uniquement les missions encaissées
+                        totalCash += m.com; count++;
+                        body.innerHTML += `<tr><td><span class="id-label">${m.id}</span></td><td><strong>${m.nom}</strong></td><td class="amount">${m.com.toLocaleString()} F</td></tr>`;
+                    } else if (m.etape === 2) {
+                        totalWait += m.com;
+                    }
+                });
+            }
+            document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
+            document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
+            document.getElementById('val-count').innerText = count;
+            document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash/count).toLocaleString() + " F" : "0 F";
+        });
+    }
+
     window.setFilter = (mode, btn) => {
         filterMode = mode;
         document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         chargerDonnees();
     };
+</script>
 
     function chargerDonnees() {
         onValue(ref(db, 'missions'), (snap) => {
