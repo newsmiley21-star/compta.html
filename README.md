@@ -8,6 +8,7 @@
         :root {
             --gabon-vert: #009E60; --gabon-jaune: #FCD116; --gabon-bleu: #3A75C4;
             --bg: #f4f7f6; --card-bg: #ffffff; --text-main: #2d3436; --text-muted: #636e72;
+            --danger: #e74c3c;
         }
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; }
 
@@ -22,7 +23,7 @@
         .btn-unlock { width: 100%; padding: 15px; background: var(--gabon-vert); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
         /* DASHBOARD CONTENT */
-        #dashboard-content { display: none; padding: 15px; max-width: 800px; margin: auto; }
+        #dashboard-content { display: none; padding: 15px; max-width: 900px; margin: auto; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .header h1 { font-size: 20px; margin: 0; color: var(--gabon-vert); font-weight: 800; }
@@ -44,16 +45,24 @@
         .panel { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; text-align: left; padding: 12px 15px; font-size: 10px; color: var(--text-muted); border-bottom: 1px solid #eee; }
-        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: top; }
+        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
         
         .id-label { font-family: monospace; background: #2d3436; color: var(--gabon-jaune); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
         .date-info { font-size: 10px; color: #95a5a6; display: block; margin-top: 4px; line-height: 1.2; }
         .amount { text-align: right; font-weight: 800; color: var(--gabon-vert); font-size: 14px; }
         .lieu-info { font-size: 11px; color: var(--gabon-bleu); font-weight: 500; }
 
+        /* BOUTON SUPPRIMER */
+        .btn-del { 
+            background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; 
+            padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; 
+            transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-del:hover { background: var(--danger); color: white; }
+
         .btn-print { width: 100%; margin-top: 20px; padding: 15px; background: #2d3436; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        @media print { .filters, .btn-print, #lock-screen { display: none; } }
+        @media print { .filters, .btn-print, #lock-screen, .btn-del, th:last-child, td:last-child { display: none; } }
     </style>
 </head>
 <body>
@@ -61,9 +70,9 @@
     <div id="lock-screen">
         <div class="lock-box">
             <h2 style="margin:0; font-size: 18px;">CT241 FINANCE 🔐</h2>
-            <p style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Accès Administrateur Uniquement</p>
-            <input type="password" id="admin-code" placeholder="Entrez le code">
-            <button class="btn-unlock" onclick="verifierCode()">OUVRIR LE BILAN</button>
+            <p id="status-text" style="font-size: 11px; color: #7f8c8d; margin-top: 5px;">Entrez le code d'accès</p>
+            <input type="password" id="admin-code" placeholder="Code secret" autocomplete="off">
+            <button class="btn-unlock" id="unlock-btn">OUVRIR LE BILAN</button>
             <p id="lock-error" style="color:red; font-size: 11px; margin-top: 10px; display:none; font-weight: bold;">CODE INCORRECT</p>
         </div>
     </div>
@@ -71,7 +80,7 @@
     <div id="dashboard-content">
         <div class="header">
             <h1>CT241 <span style="color:var(--text-main)">COMPTA</span></h1>
-            <div style="font-size: 10px; background: #e1f5fe; padding: 4px 8px; border-radius: 5px; color: var(--gabon-bleu); font-weight: bold;">LIVE SYNC</div>
+            <div style="font-size: 10px; background: #e1f5fe; padding: 4px 8px; border-radius: 5px; color: var(--gabon-bleu); font-weight: bold;">ADMIN PANEL</div>
         </div>
 
         <div class="filters">
@@ -106,19 +115,54 @@
                         <th>MISSION / DATE</th>
                         <th>DÉTAILS CLIENT</th>
                         <th style="text-align:right">MONTANT</th>
+                        <th style="width: 50px; text-align: center;">AJUST.</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
-                    </tbody>
+                </tbody>
             </table>
         </div>
 
         <button class="btn-print" onclick="window.print()">📥 TÉLÉCHARGER LE RAPPORT PDF</button>
     </div>
 
+<script>
+    window.startSync = null;
+    window.supprimerMission = null;
+
+    function verifierDirect() {
+        const val = document.getElementById('admin-code').value.trim();
+        const error = document.getElementById('lock-error');
+        if (val === "2410") {
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+            if (typeof window.startSync === "function") window.startSync();
+        } else {
+            error.style.display = 'block';
+            document.getElementById('admin-code').value = "";
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('unlock-btn');
+        const input = document.getElementById('admin-code');
+        btn.addEventListener('click', verifierDirect);
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') verifierDirect(); });
+        input.focus();
+    });
+
+    // Fonction globale pour appeler la suppression depuis les boutons HTML
+    function confirmDelete(id) {
+        const conf = confirm("⚠️ Supprimer définitivement cette mission ? Cette action est irréversible.");
+        if (conf && window.supprimerMission) {
+            window.supprimerMission(id);
+        }
+    }
+</script>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAPCKRy9NTo4X8nn8YpxAbPtX8SlKj-7sQ",
@@ -134,93 +178,97 @@
     const db = getDatabase(app);
     let filterMode = 'all';
 
-    // FONCTION DE VÉRIFICATION DU CODE
-    window.verifierCode = () => {
-        const input = document.getElementById('admin-code').value;
-        if(input === "2410") {
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
-            chargerDonnees();
-        } else {
-            document.getElementById('lock-error').style.display = 'block';
-        }
+    // Fonction de suppression
+    window.supprimerMission = function(missionKey) {
+        const missionRef = ref(db, 'missions/' + missionKey);
+        remove(missionRef)
+            .then(() => console.log("Mission supprimée"))
+            .catch((error) => alert("Erreur lors de la suppression: " + error.message));
     };
 
-    // LOGIQUE DE FILTRAGE
-    const updateTab = (id, mode) => {
-        filterMode = mode;
-        document.querySelectorAll('.btn-f').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        chargerDonnees();
-    };
-
-    document.getElementById('f-all').onclick = () => updateTab('f-all', 'all');
-    document.getElementById('f-today').onclick = () => updateTab('f-today', 'today');
-    document.getElementById('f-month').onclick = () => updateTab('f-month', 'month');
-
-    // CHARGEMENT ET SYNCHRONISATION DES DONNÉES
-    function chargerDonnees() {
+    // Synchronisation
+    window.startSync = function chargerDonnees() {
         onValue(ref(db, 'missions'), (snap) => {
             const data = snap.val();
             const body = document.getElementById('table-body');
             let totalCash = 0, totalWait = 0, count = 0;
             
             body.innerHTML = "";
-            const todayStr = new Date().toLocaleDateString('fr-FR');
-            const currentMonth = new Date().getMonth();
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('fr-FR');
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
 
             if (data) {
-                // Trier pour avoir les plus récents en haut
                 const keys = Object.keys(data).reverse();
 
                 keys.forEach(key => {
                     const m = data[key];
+                    if(!m.date) return;
 
-                    // Logique de Filtrage
+                    // Filtres
                     if(filterMode === 'today' && m.date !== todayStr) return;
                     if(filterMode === 'month') {
-                        const mMonth = parseInt(m.date.split('/')[1]) - 1;
-                        if(mMonth !== currentMonth) return;
+                        const dateParts = m.date.split('/');
+                        const mMonth = parseInt(dateParts[1]) - 1;
+                        const mYear = parseInt(dateParts[2]);
+                        if(mMonth !== currentMonth || mYear !== currentYear) return;
                     }
 
-                    // Calcul de l'argent en attente (Livreurs en route)
-                    if (m.etape === 2) {
-                        totalWait += parseFloat(m.com || 0);
+                    const montant = parseFloat(m.com || 0);
+
+                    // Calcul Attente (Etape 2)
+                    if (parseInt(m.etape) === 2) {
+                        totalWait += montant;
                     }
 
-                    // Affichage et calcul des recettes encaissées (Payées)
-                    if (m.etape === 3) {
-                        const montant = parseFloat(m.com || 0);
+                    // Calcul & Affichage Payé (Etape 3)
+                    if (parseInt(m.etape) === 3) {
                         totalCash += montant;
                         count++;
-
-                        body.innerHTML += `
-                            <tr>
-                                <td>
-                                    <span class="id-label">${m.id}</span>
-                                    <span class="date-info">📅 ${m.date}<br>🕒 ${m.heure}</span>
-                                </td>
-                                <td>
-                                    <strong>${m.nom}</strong><br>
-                                    <span class="lieu-info">📍 ${m.lieu || 'Non spécifié'}</span>
-                                </td>
-                                <td class="amount">
-                                    ${montant.toLocaleString()} F
-                                </td>
-                            </tr>
-                        `;
                     }
+
+                    // On affiche TOUTES les missions (Etape 2 et 3) pour permettre le nettoyage
+                    // Mais on grise un peu celles en attente
+                    const isWait = parseInt(m.etape) === 2;
+                    
+                    body.innerHTML += `
+                        <tr style="${isWait ? 'opacity: 0.7; background: #fafafa;' : ''}">
+                            <td>
+                                <span class="id-label">${m.id || 'N/A'}</span>
+                                ${isWait ? '<span style="font-size:9px; color:orange; font-weight:bold;">[EN ATTENTE]</span>' : ''}
+                                <span class="date-info">📅 ${m.date}<br>🕒 ${m.heure || ''}</span>
+                            </td>
+                            <td>
+                                <strong>${m.nom || 'Client'}</strong><br>
+                                <span class="lieu-info">📍 ${m.lieu || ''}</span>
+                            </td>
+                            <td class="amount">${montant.toLocaleString()} F</td>
+                            <td style="text-align: center;">
+                                <button class="btn-del" onclick="confirmDelete('${key}')" title="Supprimer">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
                 });
             }
 
-            // MAJ des compteurs du tableau de bord
             document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
             document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
             document.getElementById('val-count').innerText = count;
             document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash / count).toLocaleString() + " F" : "0 F";
         });
-    }
+    };
+
+    window.setFilter = (mode, id) => {
+        filterMode = mode;
+        document.querySelectorAll('.btn-f').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if (typeof window.startSync === "function") window.startSync();
+    };
+
+    document.getElementById('f-all').onclick = () => window.setFilter('all', 'f-all');
+    document.getElementById('f-today').onclick = () => window.setFilter('today', 'f-today');
+    document.getElementById('f-month').onclick = () => window.setFilter('month', 'f-month');
 </script>
 </body>
 </html>
-
