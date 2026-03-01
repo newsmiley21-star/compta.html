@@ -138,7 +138,7 @@
     function verifierDirect() {
         const val = document.getElementById('admin-code').value.trim();
         const error = document.getElementById('lock-error');
-        if (val === "2410") {
+        if (val === "129015") {
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard-content').style.display = 'block';
             if (typeof window.startSync === "function") window.startSync();
