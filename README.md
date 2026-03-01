@@ -33,6 +33,7 @@
         .kpi-card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ddd; }
         .kpi-card.green { border-left-color: var(--gabon-vert); }
         .kpi-card.yellow { border-left-color: var(--gabon-jaune); }
+        .kpi-card.blue { border-left-color: var(--gabon-bleu); }
         .kpi-card span { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
         .kpi-card div { font-size: 18px; font-weight: 800; margin-top: 5px; }
 
@@ -50,7 +51,9 @@
         .id-label { font-family: monospace; background: #2d3436; color: var(--gabon-jaune); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
         .date-info { font-size: 10px; color: #95a5a6; display: block; margin-top: 4px; line-height: 1.2; }
         .amount { text-align: right; font-weight: 800; color: var(--gabon-vert); font-size: 14px; }
-        .lieu-info { font-size: 11px; color: var(--gabon-bleu); font-weight: 500; }
+        .com-direction { font-size: 10px; color: var(--gabon-bleu); font-weight: bold; display: block; text-align: right; }
+        .lieu-info { font-size: 11px; color: #636e72; font-weight: 400; }
+        .livreur-tag { font-size: 10px; background: #f1f5f9; color: var(--text-main); padding: 2px 5px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 5px; }
 
         /* BOUTON SUPPRIMER */
         .btn-del { 
@@ -91,20 +94,20 @@
 
         <div class="kpi-grid">
             <div class="kpi-card green">
-                <span>Cash en Main ✅</span>
+                <span>Chiffre d'Affaires 📈</span>
+                <div id="val-chiffre">0 F</div>
+            </div>
+            <div class="kpi-card blue">
+                <span>Ma Commission 💰</span>
+                <div id="val-ma-com">0 F</div>
+            </div>
+            <div class="kpi-card green">
+                <span>Cash Encaissé ✅</span>
                 <div id="val-encaissé">0 F</div>
             </div>
             <div class="kpi-card yellow">
                 <span>En Attente ⏳</span>
                 <div id="val-attente">0 F</div>
-            </div>
-            <div class="kpi-card">
-                <span>Missions Payées</span>
-                <div id="val-count">0</div>
-            </div>
-            <div class="kpi-card">
-                <span>Moyenne/Client</span>
-                <div id="val-avg">0 F</div>
             </div>
         </div>
 
@@ -113,8 +116,8 @@
                 <thead>
                     <tr>
                         <th>MISSION / DATE</th>
-                        <th>DÉTAILS CLIENT</th>
-                        <th style="text-align:right">MONTANT</th>
+                        <th>DÉTAILS CLIENT & LIVREUR</th>
+                        <th style="text-align:right">MONTANT & COM.</th>
                         <th style="width: 50px; text-align: center;">AJUST.</th>
                     </tr>
                 </thead>
@@ -151,7 +154,6 @@
         input.focus();
     });
 
-    // Fonction globale pour appeler la suppression depuis les boutons HTML
     function confirmDelete(id) {
         const conf = confirm("⚠️ Supprimer définitivement cette mission ? Cette action est irréversible.");
         if (conf && window.supprimerMission) {
@@ -178,7 +180,6 @@
     const db = getDatabase(app);
     let filterMode = 'all';
 
-    // Fonction de suppression
     window.supprimerMission = function(missionKey) {
         const missionRef = ref(db, 'missions/' + missionKey);
         remove(missionRef)
@@ -186,12 +187,11 @@
             .catch((error) => alert("Erreur lors de la suppression: " + error.message));
     };
 
-    // Synchronisation
     window.startSync = function chargerDonnees() {
         onValue(ref(db, 'missions'), (snap) => {
             const data = snap.val();
             const body = document.getElementById('table-body');
-            let totalCash = 0, totalWait = 0, count = 0;
+            let totalCash = 0, totalWait = 0, totalMaCom = 0, totalChiffre = 0;
             
             body.innerHTML = "";
             const now = new Date();
@@ -215,35 +215,41 @@
                         if(mMonth !== currentMonth || mYear !== currentYear) return;
                     }
 
-                    const montant = parseFloat(m.com || 0);
+                    const montantMission = parseFloat(m.com || 0); // Total payé par le client
+                    // Calcul de VOTRE commission :
+                    // On assume que le montant total comprend votre marge (390F selon votre modèle business)
+                    // Si on suit votre rapport de profit : Gain Direction = 390F sur une course de 15k
+                    // Pour simplifier l'affichage ici, on affiche la part direction si elle est enregistrée ou fixe à 390
+                    const maCom = (montantMission > 1000) ? 390 : 190; 
 
-                    // Calcul Attente (Etape 2)
                     if (parseInt(m.etape) === 2) {
-                        totalWait += montant;
+                        totalWait += montantMission;
                     }
 
-                    // Calcul & Affichage Payé (Etape 3)
                     if (parseInt(m.etape) === 3) {
-                        totalCash += montant;
-                        count++;
+                        totalCash += montantMission;
+                        totalMaCom += maCom;
+                        totalChiffre += (parseFloat(m.retrait) || 0);
                     }
 
-                    // On affiche TOUTES les missions (Etape 2 et 3) pour permettre le nettoyage
-                    // Mais on grise un peu celles en attente
                     const isWait = parseInt(m.etape) === 2;
                     
                     body.innerHTML += `
                         <tr style="${isWait ? 'opacity: 0.7; background: #fafafa;' : ''}">
                             <td>
                                 <span class="id-label">${m.id || 'N/A'}</span>
-                                ${isWait ? '<span style="font-size:9px; color:orange; font-weight:bold;">[EN ATTENTE]</span>' : ''}
+                                ${isWait ? '<br><span style="font-size:9px; color:orange; font-weight:bold;">[EN ATTENTE]</span>' : ''}
                                 <span class="date-info">📅 ${m.date}<br>🕒 ${m.heure || ''}</span>
                             </td>
                             <td>
                                 <strong>${m.nom || 'Client'}</strong><br>
-                                <span class="lieu-info">📍 ${m.lieu || ''}</span>
+                                <span class="lieu-info">📍 ${m.lieu || 'Non précisé'}</span><br>
+                                <span class="livreur-tag">👤 Livreur: ${m.livreur || 'Inconnu'}</span>
                             </td>
-                            <td class="amount">${montant.toLocaleString()} F</td>
+                            <td class="amount">
+                                ${montantMission.toLocaleString()} F
+                                <span class="com-direction">+${maCom} F (Direction)</span>
+                            </td>
                             <td style="text-align: center;">
                                 <button class="btn-del" onclick="confirmDelete('${key}')" title="Supprimer">🗑️</button>
                             </td>
@@ -254,8 +260,8 @@
 
             document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
             document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
-            document.getElementById('val-count').innerText = count;
-            document.getElementById('val-avg').innerText = count > 0 ? Math.round(totalCash / count).toLocaleString() + " F" : "0 F";
+            document.getElementById('val-ma-com').innerText = totalMaCom.toLocaleString() + " F";
+            document.getElementById('val-chiffre').innerText = totalChiffre.toLocaleString() + " F";
         });
     };
 
