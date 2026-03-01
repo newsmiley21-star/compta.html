@@ -34,6 +34,7 @@
         .kpi-card.green { border-left-color: var(--gabon-vert); }
         .kpi-card.yellow { border-left-color: var(--gabon-jaune); }
         .kpi-card.blue { border-left-color: var(--gabon-bleu); }
+        .kpi-card.dark { border-left-color: var(--text-main); }
         .kpi-card span { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
         .kpi-card div { font-size: 18px; font-weight: 800; margin-top: 5px; }
 
@@ -52,6 +53,7 @@
         .date-info { font-size: 10px; color: #95a5a6; display: block; margin-top: 4px; line-height: 1.2; }
         .amount { text-align: right; font-weight: 800; color: var(--gabon-vert); font-size: 14px; }
         .com-direction { font-size: 10px; color: var(--gabon-bleu); font-weight: bold; display: block; text-align: right; }
+        .com-livreur { font-size: 10px; color: var(--text-muted); font-weight: normal; display: block; text-align: right; }
         .lieu-info { font-size: 11px; color: #636e72; font-weight: 400; }
         .livreur-tag { font-size: 10px; background: #f1f5f9; color: var(--text-main); padding: 2px 5px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 5px; }
 
@@ -93,13 +95,13 @@
         </div>
 
         <div class="kpi-grid">
-            <div class="kpi-card green">
-                <span>Chiffre d'Affaires 📈</span>
-                <div id="val-chiffre">0 F</div>
-            </div>
             <div class="kpi-card blue">
-                <span>Ma Commission 💰</span>
+                <span>Ma Com Direction 💰</span>
                 <div id="val-ma-com">0 F</div>
+            </div>
+            <div class="kpi-card dark">
+                <span>Part des Livreurs 👤</span>
+                <div id="val-livreurs-com">0 F</div>
             </div>
             <div class="kpi-card green">
                 <span>Cash Encaissé ✅</span>
@@ -117,7 +119,7 @@
                     <tr>
                         <th>MISSION / DATE</th>
                         <th>DÉTAILS CLIENT & LIVREUR</th>
-                        <th style="text-align:right">MONTANT & COM.</th>
+                        <th style="text-align:right">MONTANT & RÉPARTITION</th>
                         <th style="width: 50px; text-align: center;">AJUST.</th>
                     </tr>
                 </thead>
@@ -191,7 +193,7 @@
         onValue(ref(db, 'missions'), (snap) => {
             const data = snap.val();
             const body = document.getElementById('table-body');
-            let totalCash = 0, totalWait = 0, totalMaCom = 0, totalChiffre = 0;
+            let totalCash = 0, totalWait = 0, totalMaCom = 0, totalLivreurCom = 0;
             
             body.innerHTML = "";
             const now = new Date();
@@ -215,12 +217,13 @@
                         if(mMonth !== currentMonth || mYear !== currentYear) return;
                     }
 
-                    const montantMission = parseFloat(m.com || 0); // Total payé par le client
-                    // Calcul de VOTRE commission :
-                    // On assume que le montant total comprend votre marge (390F selon votre modèle business)
-                    // Si on suit votre rapport de profit : Gain Direction = 390F sur une course de 15k
-                    // Pour simplifier l'affichage ici, on affiche la part direction si elle est enregistrée ou fixe à 390
-                    const maCom = (montantMission > 1000) ? 390 : 190; 
+                    const montantMission = parseFloat(m.com || 0); 
+                    
+                    // Logique de commission selon votre modèle :
+                    // Gain Direction = 390 F
+                    // Gain Livreur (Net) = 800 F (basé sur 1000 brute - 200 redevance)
+                    const maCom = (montantMission > 1000) ? 390 : 190;
+                    const livreurCom = (montantMission > 1000) ? 800 : 400;
 
                     if (parseInt(m.etape) === 2) {
                         totalWait += montantMission;
@@ -229,7 +232,7 @@
                     if (parseInt(m.etape) === 3) {
                         totalCash += montantMission;
                         totalMaCom += maCom;
-                        totalChiffre += (parseFloat(m.retrait) || 0);
+                        totalLivreurCom += livreurCom;
                     }
 
                     const isWait = parseInt(m.etape) === 2;
@@ -248,7 +251,8 @@
                             </td>
                             <td class="amount">
                                 ${montantMission.toLocaleString()} F
-                                <span class="com-direction">+${maCom} F (Direction)</span>
+                                <span class="com-direction">Ma Com: +${maCom} F</span>
+                                <span class="com-livreur">Livreur: +${livreurCom} F</span>
                             </td>
                             <td style="text-align: center;">
                                 <button class="btn-del" onclick="confirmDelete('${key}')" title="Supprimer">🗑️</button>
@@ -261,7 +265,7 @@
             document.getElementById('val-encaissé').innerText = totalCash.toLocaleString() + " F";
             document.getElementById('val-attente').innerText = totalWait.toLocaleString() + " F";
             document.getElementById('val-ma-com').innerText = totalMaCom.toLocaleString() + " F";
-            document.getElementById('val-chiffre').innerText = totalChiffre.toLocaleString() + " F";
+            document.getElementById('val-livreurs-com').innerText = totalLivreurCom.toLocaleString() + " F";
         });
     };
 
